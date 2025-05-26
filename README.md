@@ -11,10 +11,10 @@ local Window = Rayfield:CreateWindow({
         FileName = "KzHub"
     },
     Discord = {
-        Enabled = false,
-        Invite = "",
-        RememberJoins = true
-    },
+    Enabled = true,
+    Invite = "https://discord.gg/DaU2gcBsfy", -- apenas o código
+    RememberJoins = true
+},
     KeySystem = false,
     KeySettings = {
         Title = "Untitled",
