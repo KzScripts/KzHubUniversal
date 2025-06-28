@@ -155,6 +155,66 @@ TabMain:AddToggle({
     end
 })
 
+
+--aqui
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Função para obter nomes dos jogadores (exceto você)
+local function GetPlayerNames()
+	local names = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			table.insert(names, player.Name)
+		end
+	end
+	return names
+end
+
+-- Referência do dropdown (vai ser recriado no refresh)
+local playerDropdown
+
+-- Função para criar o dropdown
+local function CreateDropdown()
+	-- Se já existe, destrói antes de criar de novo
+	if playerDropdown and playerDropdown.Destroy then
+		playerDropdown:Destroy()
+	end
+
+	playerDropdown = TabMain:AddDropdown({
+		Name = "Players Teleport",
+		Default = nil,
+		Options = GetPlayerNames(),
+		Callback = function(selectedName)
+			local targetPlayer = Players:FindFirstChild(selectedName)
+			if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+				local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+				if myHRP then
+					myHRP.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+				end
+			end
+		end
+	})
+end
+
+-- Cria o dropdown inicial
+CreateDropdown()
+
+-- Botão que "reinicia" o dropdown
+TabMain:AddButton({
+	Name = "Refresh Players",
+	Callback = function()
+		CreateDropdown()
+		print("Dropdown recriado com sucesso.")
+	end
+})
+
+-- Atualiza automaticamente se jogadores entram ou saem
+Players.PlayerAdded:Connect(CreateDropdown)
+Players.PlayerRemoving:Connect(CreateDropdown)
+
+--final
+
 local TabPlayer = Window:MakeTab({"Player", "user"})
 
 local Section = TabPlayer:AddSection({"Player"})
@@ -315,46 +375,114 @@ TabPlayer:AddTextBox({
     end
 })
 
+local TabTeleport= Window:MakeTab({"Teleport", "trending-up"})
+
+local Section = TabTeleport:AddSection({"Local Teleport"})
+
+local posSalva = nil
+
+TabTeleport:AddButton({
+    Name = "Setar Local",
+    Callback = function()
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            posSalva = char.HumanoidRootPart.CFrame
+            print("Local salvo com sucesso!")
+        end
+    end
+})
+
+TabTeleport:AddButton({
+    Name = "Voltar",
+    Callback = function()
+        if not posSalva then
+            warn("Nenhum local foi salvo!")
+            return
+        end
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            local root = char.HumanoidRootPart
+            if humanoid then
+                humanoid.PlatformStand = true
+                local tempo = 5.5
+                local inicio = tick()
+                local origem = root.Position
+                local destino = posSalva.Position
+                while tick() - inicio < tempo do
+                    local alpha = (tick() - inicio) / tempo
+                    root.CFrame = CFrame.new(origem:Lerp(destino, alpha), destino)
+                    root.Velocity = Vector3.zero
+                    game:GetService("RunService").Heartbeat:Wait()
+                end
+                root.CFrame = posSalva
+                task.wait(0.5)
+                humanoid.PlatformStand = false
+            end
+        end
+    end
+})
+
+local Section = TabTeleport:AddSection({"Teleport Player"})
+
+--aqui
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
+-- Função para obter nomes dos jogadores (exceto você)
 local function GetPlayerNames()
 	local names = {}
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p ~= LocalPlayer then -- opcional, remove você mesmo da lista
-			table.insert(names, p.Name)
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			table.insert(names, player.Name)
 		end
 	end
 	return names
 end
 
--- Cria o Dropdown inicialmente
-local Dropdown
-Dropdown = TabMain:AddDropdown({
-	Name = "Players Teleport",
-	Default = nil,
-	Options = GetPlayerNames(),
-	Callback = function(plr)
-		local targetPlayer = Players:FindFirstChild(plr)
-		if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-			local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-			if myHRP then
-				myHRP.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+-- Referência do dropdown (vai ser recriado no refresh)
+local playerDropdown
+
+-- Função para criar o dropdown
+local function CreateDropdown()
+	-- Se já existe, destrói antes de criar de novo
+	if playerDropdown and playerDropdown.Destroy then
+		playerDropdown:Destroy()
+	end
+
+	playerDropdown = TabTeleport:AddDropdown({
+		Name = "Players Teleport",
+		Default = nil,
+		Options = GetPlayerNames(),
+		Callback = function(selectedName)
+			local targetPlayer = Players:FindFirstChild(selectedName)
+			if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+				local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+				if myHRP then
+					myHRP.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+				end
 			end
 		end
+	})
+end
+
+-- Cria o dropdown inicial
+CreateDropdown()
+
+-- Botão que "reinicia" o dropdown
+TabTeleport:AddButton({
+	Name = "Refresh Players",
+	Callback = function()
+		CreateDropdown()
+		print("Dropdown recriado com sucesso.")
 	end
 })
 
--- Atualiza as opções do dropdown
-local function UpdateDropdown()
-	if Dropdown and Dropdown.SetOptions then
-		Dropdown:SetOptions(GetPlayerNames())
-	end
-end
+-- Atualiza automaticamente se jogadores entram ou saem
+Players.PlayerAdded:Connect(CreateDropdown)
+Players.PlayerRemoving:Connect(CreateDropdown)
+--final
 
--- Conecta os eventos para atualizar automaticamente
-Players.PlayerAdded:Connect(UpdateDropdown)
-Players.PlayerRemoving:Connect(UpdateDropdown)
 
 local TabMisc= Window:MakeTab({"Misc", "folder"})
 
@@ -438,8 +566,26 @@ TabSettings:AddButton({
         setfpscap(60)
     end
 })
+
+
+local Section = TabSettings:AddSection({"Players Kill"})
  
- 
+ --butao de reset 
+ TabSettings:AddButton({
+    Name = "Reset Player",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.Health = 0 -- Mata o jogador
+        end
+    end
+})
+
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+
 local TabCreditos= Window:MakeTab({"Creditos", "external-link"})
 
 local Paragraph = TabCreditos:AddParagraph({"Developer Hub", "script by kzscripts and team kzhub "})
